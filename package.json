@@ -1,0 +1,9 @@
+{
+  "name": "claudrobe",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Colour themes for the Claude Desktop app (macOS).",
+  "license": "MIT",
+  "author": "Sobhi Mansour",
+  "type": "module"
+}
