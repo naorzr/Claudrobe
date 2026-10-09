@@ -1,0 +1,13 @@
+{
+  "manifest_version": 3,
+  "name": "Claude Themes",
+  "description": "Chrome themes and per-session accent colours for Claude Desktop.",
+  "version": "2026.10.11.794",
+  "content_scripts": [{
+    "matches": ["https://claude.ai/*"],
+    "js": ["theme.js"],
+    "run_at": "document_idle",
+    "world": "MAIN",
+    "all_frames": false
+  }]
+}
