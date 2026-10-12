@@ -47,5 +47,3 @@ bash "$HOME/Library/Application Support/Claudrobe/uninstall.sh"
 ```
 
 Saved themes and settings are kept for a future reinstall.
-
-Palettes adapted from [cctheme](https://github.com/Burzu8/cctheme) (MIT).
