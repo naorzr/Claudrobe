@@ -20,7 +20,7 @@ cd Claudrobe
 bash install.sh
 ```
 
-The installer checks compatibility, installs the files and restarts Claude gracefully. No Node, developer mode, DevTools or sudo needed. It uses an undocumented Claude extension hook; unsupported versions are detected before any changes are made. An existing React DevTools extension in the same slot is left untouched and blocks installation.
+The installer checks compatibility and installs the files without closing or restarting Claude. When ready, quit Claude fully (⌘Q) and reopen it to see the changes. No Node, developer mode, DevTools or sudo needed. It uses an undocumented Claude extension hook; unsupported versions are detected before any changes are made. An existing React DevTools extension in the same slot is left untouched and blocks installation.
 
 Open the colour wheel beside the sidebar's back/forward buttons, or press **⌥⇧T**.
 
@@ -32,7 +32,7 @@ From your clone:
 git pull --ff-only && bash install.sh
 ```
 
-Saved themes and settings are kept.
+Saved themes and settings are kept. Restart Claude when ready to apply the update.
 
 ## Uninstall
 
@@ -46,4 +46,4 @@ If you deleted the clone:
 bash "$HOME/Library/Application Support/Claudrobe/uninstall.sh"
 ```
 
-Saved themes and settings are kept for a future reinstall.
+Claude is left running. Restart it when ready to finish removing the changes. Saved themes and settings are kept for a future reinstall.

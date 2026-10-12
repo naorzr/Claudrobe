@@ -13,7 +13,10 @@ name = pathlib.Path(sys.argv[0]).name
 args = sys.argv[1:]
 if name == 'uname': print('Darwin')
 elif name == 'id': print('501')
-elif name == 'pgrep': sys.exit(1)
+elif name == 'pgrep': sys.exit(0)
+elif name in ('open', 'osascript', 'kill', 'killall', 'pkill'):
+    pathlib.Path(os.environ['LIFECYCLE']).write_text(name)
+    sys.exit(98)
 elif name in ('curl', 'wget', 'git'):
     pathlib.Path(os.environ['NETWORK']).write_text(name)
     sys.exit(99)
@@ -35,7 +38,7 @@ class InstallerTests(unittest.TestCase):
         stub = self.bin / 'stub'
         stub.write_text(STUB)
         stub.chmod(0o755)
-        for name in ('uname', 'id', 'pgrep', 'curl', 'wget', 'git', 'plutil', 'launchctl', 'open', 'osascript'):
+        for name in ('uname', 'id', 'pgrep', 'curl', 'wget', 'git', 'plutil', 'launchctl', 'open', 'osascript', 'kill', 'killall', 'pkill'):
             (self.bin / name).symlink_to(stub)
         self.source = Path(self.temp.name) / 'checkout with spaces'
         self.source.mkdir()
@@ -45,7 +48,9 @@ class InstallerTests(unittest.TestCase):
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(ROOT / relative, target)
         self.network = Path(self.temp.name) / 'network-call'
+        self.lifecycle = Path(self.temp.name) / 'lifecycle-call'
         self.env = dict(os.environ, HOME=str(self.home), NETWORK=str(self.network),
+                        LIFECYCLE=str(self.lifecycle),
                         CALLS=str(Path(self.temp.name) / 'calls'),
                         PATH=str(self.bin) + ':' + os.environ['PATH'])
         self.asar = self.home / 'Applications/Claude.app/Contents/Resources/app.asar'
@@ -60,6 +65,7 @@ class InstallerTests(unittest.TestCase):
                                 cwd=self.home, text=True, capture_output=True)
         self.assertEqual(result.returncode == 0, success, result.stdout + result.stderr)
         self.assertFalse(self.network.exists(), 'Installer attempted a network command')
+        self.assertFalse(self.lifecycle.exists(), 'Script interrupted or opened Claude')
         return result
 
     def test_install_update_uninstall(self):
@@ -73,6 +79,18 @@ class InstallerTests(unittest.TestCase):
         self.assertFalse(self.plist.exists())
         self.assertFalse(self.state.exists())
         self.run_script('uninstall.sh')
+
+    def test_manual_restart_message_after_install_and_update(self):
+        for _ in range(2):
+            result = self.run_script('install.sh')
+            self.assertIn('Claudrobe installed.', result.stdout)
+            self.assertIn('quit Claude fully (Cmd+Q) and reopen it', result.stdout)
+
+    def test_manual_restart_message_after_uninstall(self):
+        self.run_script('install.sh')
+        result = self.run_script('uninstall.sh')
+        self.assertIn('Claudrobe uninstalled.', result.stdout)
+        self.assertIn('quit Claude fully (Cmd+Q) and reopen it', result.stdout)
 
     def test_installs_local_changes_without_downloading(self):
         local = self.source / 'extension/theme.js'

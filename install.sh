@@ -39,16 +39,6 @@ if [ -f "$PLIST" ]; then
   grep -q REACT_PROFILE "$PLIST" && grep -q fmkadmapgofadopljbjfkapdkoienihi "$PLIST" || fail 'The existing login item is not recognized as Claudrobe; it has not been changed.'
 fi
 
-if pgrep -x Claude >/dev/null; then
-  printf 'Quitting Claude gracefully. Save any work if Claude asks.\n'
-  osascript -e 'tell application "Claude" to quit' >/dev/null
-  for ((i=0; i<30; i++)); do
-    pgrep -x Claude >/dev/null || break
-    sleep 1
-  done
-  if pgrep -x Claude >/dev/null; then fail 'Claude is still running. Quit it and rerun this command.'; fi
-fi
-
 mkdir -p "$EXT" "$STATE" "$(dirname "$PLIST")"
 cp "$SOURCE/extension/manifest.json" "$SOURCE/extension/theme.js" "$EXT/"
 cp "$SOURCE/uninstall.sh" "$STATE/uninstall.sh"
@@ -57,7 +47,7 @@ touch "$STATE/installed"
 launchctl bootout "$DOMAIN/com.claude-themes.env" >/dev/null 2>&1 || true
 launchctl bootstrap "$DOMAIN" "$PLIST" || fail 'Files are installed, but the login item could not load. Rerun the install command to retry.'
 launchctl setenv REACT_PROFILE 1
-open "$APP"
-printf '\nClaudrobe installed. Look for the colour wheel in Claude.\n'
+printf '\nClaudrobe installed. Claude has not been closed or restarted.\n'
+printf 'When ready, quit Claude fully (Cmd+Q) and reopen it to see the changes.\n'
 printf 'Update: get the latest source, then rerun bash install.sh. Your saved themes and settings are kept.\n'
 printf 'Uninstall: bash "$HOME/Library/Application Support/Claudrobe/uninstall.sh"\n'
