@@ -16,18 +16,14 @@ STATE="$HOME/Library/Application Support/Claudrobe"
 EXT="$HOME/Library/Application Support/Claude/extensions/fmkadmapgofadopljbjfkapdkoienihi"
 PLIST="$HOME/Library/LaunchAgents/com.claude-themes.env.plist"
 DOMAIN="gui/$(id -u)"
-BASE='https://raw.githubusercontent.com/smansou/Claudrobe/main'
-TMP="$(mktemp -d)"
-trap 'rm -rf "$TMP"' EXIT
+SOURCE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-printf 'Downloading Claudrobe…\n'
 for item in extension/manifest.json extension/theme.js com.claude-themes.env.plist uninstall.sh; do
-  mkdir -p "$TMP/$(dirname "$item")"
-  curl --fail --silent --show-error --location "$BASE/$item" -o "$TMP/$item"
+  [ -f "$SOURCE/$item" ] || fail "Missing $item. Clone or download the complete repository before installing."
 done
-plutil -lint "$TMP/extension/manifest.json" "$TMP/com.claude-themes.env.plist" >/dev/null
-[ -s "$TMP/extension/theme.js" ] || fail 'Downloaded theme script is empty.'
-bash -n "$TMP/uninstall.sh"
+plutil -lint "$SOURCE/extension/manifest.json" "$SOURCE/com.claude-themes.env.plist" >/dev/null
+[ -s "$SOURCE/extension/theme.js" ] || fail 'The local theme script is empty. Rebuild it with node build.mjs.'
+bash -n "$SOURCE/uninstall.sh"
 
 [ ! -L "$EXT" ] && [ ! -L "$STATE" ] && [ ! -L "$PLIST" ] || fail 'An installation path is a symlink; refusing to overwrite it.'
 if [ -e "$STATE" ] && [ ! -f "$STATE/installed" ]; then
@@ -54,14 +50,14 @@ if pgrep -x Claude >/dev/null; then
 fi
 
 mkdir -p "$EXT" "$STATE" "$(dirname "$PLIST")"
-cp "$TMP/extension/manifest.json" "$TMP/extension/theme.js" "$EXT/"
-cp "$TMP/uninstall.sh" "$STATE/uninstall.sh"
-cp "$TMP/com.claude-themes.env.plist" "$PLIST"
+cp "$SOURCE/extension/manifest.json" "$SOURCE/extension/theme.js" "$EXT/"
+cp "$SOURCE/uninstall.sh" "$STATE/uninstall.sh"
+cp "$SOURCE/com.claude-themes.env.plist" "$PLIST"
 touch "$STATE/installed"
 launchctl bootout "$DOMAIN/com.claude-themes.env" >/dev/null 2>&1 || true
 launchctl bootstrap "$DOMAIN" "$PLIST" || fail 'Files are installed, but the login item could not load. Rerun the install command to retry.'
 launchctl setenv REACT_PROFILE 1
 open "$APP"
 printf '\nClaudrobe installed. Look for the colour wheel in Claude.\n'
-printf 'Update: rerun the install command. Your saved themes and settings are kept.\n'
+printf 'Update: get the latest source, then rerun bash install.sh. Your saved themes and settings are kept.\n'
 printf 'Uninstall: bash "$HOME/Library/Application Support/Claudrobe/uninstall.sh"\n'

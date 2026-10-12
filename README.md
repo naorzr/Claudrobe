@@ -10,27 +10,44 @@ Colour themes and split-view extras for Claude Desktop on macOS.
 
 ## Install
 
-Open Terminal and run:
+Clone the repository and enter it:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/smansou/Claudrobe/main/install.sh | bash
+git clone https://github.com/smansou/Claudrobe.git
+cd Claudrobe
 ```
 
-The installer checks your Claude version, downloads the extension, installs its login item, then opens Claude. If Claude is running, it quits gracefully first; it never force-quits. No developer mode, DevTools, Node, Git, `sudo`, or manual copying required.
+Then install with one command:
+
+```bash
+bash install.sh
+```
+
+Alternatively, download **Code → Download ZIP** on GitHub, extract it, and run `bash install.sh` from the extracted folder. Git is not required for the ZIP route.
+
+The installer uses the files in your local checkout—not the latest remote version. It checks your Claude version, installs the extension and its login item, then opens Claude. If Claude is running, it quits gracefully first; it never force-quits. No developer mode, DevTools, Node, `sudo`, or manual copying required.
 
 Look for the colour wheel beside the sidebar's back/forward buttons. **⌥⇧T** also opens the panel. macOS may notify you that a background item was added.
 
-**Update:** rerun the same install command. Saved themes and settings are kept.
+**Update:** run `git pull --ff-only` in your clone, then `bash install.sh` again. For a ZIP installation, download and extract the latest source, then rerun the installer. Saved themes and settings are kept.
 
-The command downloads and runs a shell script. Read [install.sh](install.sh) before running it if you want to inspect its actions. Installation downloads files from GitHub; the theme itself makes no network requests.
+Read [install.sh](install.sh) before running it if you want to inspect its actions. Installation and uninstallation make no network requests and include no telemetry. The theme itself makes no network requests.
 
 ## Uninstall
+
+From your checkout or extracted folder:
+
+```bash
+bash uninstall.sh
+```
+
+If you deleted the source folder, a copy of the uninstaller is saved during installation:
 
 ```bash
 bash "$HOME/Library/Application Support/Claudrobe/uninstall.sh"
 ```
 
-The uninstaller is saved locally during installation, so uninstall does not need an internet connection or access to this repository. It removes the extension and login item, clears `REACT_PROFILE`, and reopens Claude if it was running. Saved themes and settings are kept for a future reinstall.
+Neither command needs an internet connection. It removes the extension and login item, clears `REACT_PROFILE`, and reopens Claude if it was running. Saved themes and settings are kept for a future reinstall.
 
 ## How it works
 

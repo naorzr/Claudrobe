@@ -1,6 +1,7 @@
 import json
 import os
 from pathlib import Path
+import shutil
 import subprocess
 import tempfile
 import unittest
@@ -13,10 +14,9 @@ args = sys.argv[1:]
 if name == 'uname': print('Darwin')
 elif name == 'id': print('501')
 elif name == 'pgrep': sys.exit(1)
-elif name == 'curl':
-    url = next(a for a in args if a.startswith('https://'))
-    relative = url.split('/main/', 1)[1]
-    shutil.copyfile(pathlib.Path(os.environ['SOURCE']) / relative, args[args.index('-o') + 1])
+elif name in ('curl', 'wget', 'git'):
+    pathlib.Path(os.environ['NETWORK']).write_text(name)
+    sys.exit(99)
 elif name == 'plutil' and '-extract' in args:
     print(json.loads(pathlib.Path(args[-1]).read_text())['name'])
 elif name == 'launchctl':
@@ -35,9 +35,17 @@ class InstallerTests(unittest.TestCase):
         stub = self.bin / 'stub'
         stub.write_text(STUB)
         stub.chmod(0o755)
-        for name in ('uname', 'id', 'pgrep', 'curl', 'plutil', 'launchctl', 'open', 'osascript'):
+        for name in ('uname', 'id', 'pgrep', 'curl', 'wget', 'git', 'plutil', 'launchctl', 'open', 'osascript'):
             (self.bin / name).symlink_to(stub)
-        self.env = dict(os.environ, HOME=str(self.home), SOURCE=str(ROOT),
+        self.source = Path(self.temp.name) / 'checkout with spaces'
+        self.source.mkdir()
+        for relative in ('install.sh', 'uninstall.sh', 'com.claude-themes.env.plist',
+                         'extension/manifest.json', 'extension/theme.js'):
+            target = self.source / relative
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(ROOT / relative, target)
+        self.network = Path(self.temp.name) / 'network-call'
+        self.env = dict(os.environ, HOME=str(self.home), NETWORK=str(self.network),
                         CALLS=str(Path(self.temp.name) / 'calls'),
                         PATH=str(self.bin) + ':' + os.environ['PATH'])
         self.asar = self.home / 'Applications/Claude.app/Contents/Resources/app.asar'
@@ -48,9 +56,10 @@ class InstallerTests(unittest.TestCase):
         self.plist = self.home / 'Library/LaunchAgents/com.claude-themes.env.plist'
 
     def run_script(self, name, success=True):
-        result = subprocess.run(['bash', str(ROOT / name)], env=self.env,
-                                text=True, capture_output=True)
+        result = subprocess.run(['bash', str(self.source / name)], env=self.env,
+                                cwd=self.home, text=True, capture_output=True)
         self.assertEqual(result.returncode == 0, success, result.stdout + result.stderr)
+        self.assertFalse(self.network.exists(), 'Installer attempted a network command')
         return result
 
     def test_install_update_uninstall(self):
@@ -64,6 +73,24 @@ class InstallerTests(unittest.TestCase):
         self.assertFalse(self.plist.exists())
         self.assertFalse(self.state.exists())
         self.run_script('uninstall.sh')
+
+    def test_installs_local_changes_without_downloading(self):
+        local = self.source / 'extension/theme.js'
+        local.write_text('window.localCheckout = true;\n')
+        self.run_script('install.sh')
+        self.assertEqual((self.ext / 'theme.js').read_bytes(), local.read_bytes())
+
+    def test_incomplete_checkout_leaves_install_untouched(self):
+        self.run_script('install.sh')
+        before = (self.ext / 'theme.js').read_bytes()
+        (self.source / 'extension/theme.js').unlink()
+        self.run_script('install.sh', False)
+        self.assertEqual((self.ext / 'theme.js').read_bytes(), before)
+
+    def test_empty_local_script_rejected(self):
+        (self.source / 'extension/theme.js').write_text('')
+        self.run_script('install.sh', False)
+        self.assertFalse(self.ext.exists())
 
     def test_unsupported_version(self):
         self.asar.write_text('no hook')
